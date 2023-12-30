@@ -5,6 +5,10 @@ variable "proxmox_endpoint" {
 variable "proxmox_node" {
   type = string
 }
+variable "proxmox_gateway" {
+  type    = string
+  default = "10.0.0.1"
+}
 variable "vm_template_id" {
   type    = number
   default = 9001
@@ -53,4 +57,30 @@ variable "vm_template_cloud_init_username" {
 variable "vm_template_cloud_init_ssh_key_path" {
   type    = string
   default = "~/.ssh/id_ed25519.pub"
+}
+# k8s custers
+variable "k8s_cluster_tags" {
+  type    = list(string)
+  default = ["terraform", "k8s"]
+}
+variable "k8s_cluster_specs" {
+  type = list(object({
+    vm_id            = number
+    type             = string
+    cpu_cores        = number
+    cpu_limit        = number
+    cpu_units        = number
+    memory_dedicated = number
+    hostname         = string
+    ip_address       = string
+    startup = object({
+      order      = number
+      up_delay   = number
+      down_delay = number
+    })
+  }))
+  validation {
+    condition     = alltrue([for spec in var.k8s_cluster_specs : contains(["manager", "node"], spec.type)])
+    error_message = "Each k8s_cluster_specs type must be 'manager' or 'node'."
+  }
 }
