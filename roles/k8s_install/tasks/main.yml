@@ -1,0 +1,109 @@
+- name: Disable all swap spaces immediately
+  command: swapoff -a
+  when: ansible_swaptotal_mb > 0
+
+- name: Remove swap entry from /etc/fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^\s*UUID=[a-fA-F0-9-]+\s+none\s+swap\s+sw\s+0\s+0'
+    line: "# Commented out by Ansible to disable swap"
+    state: absent
+
+- name: Add the kernel modules needed by containerd
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+    persistent: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: Set Kubernetes networking settings
+  ansible.posix.sysctl:
+    key: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    sysctl_file: /etc/sysctl.d/99-kubernetes-cri.conf
+    reload: true
+  loop:
+    - { key: "net.bridge.bridge-nf-call-ip6tables", value: 1 }
+    - { key: "net.bridge.bridge-nf-call-iptables", value: 1 }
+    - { key: "net.ipv4.ip_forward", value: 1 }
+
+- name: Ensure containerd dependencies are installed
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop:
+    - ca-certificates
+    - curl
+    - gnupg
+
+- name: Add Docker's official GPG key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/debian/gpg
+    dest: /etc/apt/trusted.gpg.d/docker.asc
+    mode: "0644"
+    force: false
+    checksum: "{{ docker_apt_gpg_key_checksum }}"
+
+- name: Add Docker repository
+  ansible.builtin.apt_repository:
+    repo: "{{ docker_apt_repository }}"
+    state: present
+    filename: "{{ docker_apt_filename }}"
+    update_cache: true
+
+- name: Ensure containerd is installed
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: true
+  loop:
+    - containerd.io
+
+- name: Create containerd config file
+  ansible.builtin.shell:
+    cmd: containerd config default > /etc/containerd/config.toml
+
+- name: Modify containerd config file
+  ansible.builtin.shell:
+    cmd: sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
+
+- name: Make sure containerd service is running
+  ansible.builtin.systemd_service:
+    name: containerd
+    state: restarted
+    enabled: true
+
+- name: Add Kubernetes GPG key
+  ansible.builtin.get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key
+    dest: /etc/apt/trusted.gpg.d/kubernetes.asc
+    mode: "0644"
+
+- name: Add Kubernetes repository
+  ansible.builtin.apt_repository:
+    repo: "{{ k8s_apt_repository }}"
+    state: present
+    filename: "{{ k8s_apt_filename }}"
+    update_cache: true
+
+- name: Install k8s packages
+  apt:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl
+
+- name: Hold k8s packages
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl

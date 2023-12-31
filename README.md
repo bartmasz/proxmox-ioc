@@ -35,3 +35,19 @@ terraform apply -var-file ioc.tfvars
 # destroy infrastructure
 terraform destroy -var-file ioc.tfvars
 ```
+
+## Deploy K8S
+
+Check if Ansible can connect to k8s servers.
+
+> For convenience I use the same user name on my laptop and servers.
+
+```bash
+ansible all -i hosts.ini -m ping
+```
+
+Run Ansible playbook to create K8S cluster.
+
+```bash
+ansible-playbook k8s_cluster.yml
+```

@@ -1,0 +1,13 @@
+- name: Copy join command from Ansiblehost to the worker nodes.
+  ansible.builtin.copy:
+    src: ./k8s_join_command.sh
+    dest: ./k8s_join_command.sh
+    mode: "0755"
+  become: false
+
+- name: Reset cluster
+  ansible.builtin.command:
+    cmd: kubeadm reset --force
+
+- name: Join the Worker nodes to the cluster.
+  ansible.builtin.command: sh ./k8s_join_command.sh

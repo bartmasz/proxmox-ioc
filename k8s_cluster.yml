@@ -1,0 +1,18 @@
+---
+- name: Install Kubernetes
+  hosts: k8scluster
+  become: true
+  roles:
+    - role: k8s_install
+
+- name: Bootstrap Kubernetes Control Plane
+  hosts: manager
+  become: true
+  roles:
+    - role: k8s_control_plane
+
+- name: Bootstrap Kubernetes Worker Nodes
+  hosts: node
+  become: true
+  roles:
+    - role: k8s_worker_node

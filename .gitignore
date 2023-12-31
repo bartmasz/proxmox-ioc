@@ -1,5 +1,6 @@
 # Ansible
 hosts.ini
+k8s_join_command.sh
 
 # Local environment variables
 .env
