@@ -49,5 +49,5 @@ ansible all -i hosts.ini -m ping
 Run Ansible playbook to create K8S cluster.
 
 ```bash
-ansible-playbook k8s_cluster.yml
+ansible-playbook playbooks/k8s_cluster.yml
 ```

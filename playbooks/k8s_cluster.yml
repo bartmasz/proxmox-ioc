@@ -1,0 +1,31 @@
+- name: Common setup
+  hosts: k8scluster
+  roles:
+    - role: common-setup
+
+- name: Control Plane setup
+  hosts: manager
+  roles:
+    - role: control-plane
+
+- name: Workers setup
+  hosts: node
+  roles:
+    - role: worker
+# - name: Install Kubernetes
+#   hosts: k8scluster
+#   become: true
+#   roles:
+#     - role: k8s_install
+
+# - name: Bootstrap Kubernetes Control Plane
+#   hosts: manager
+#   become: true
+#   roles:
+#     - role: k8s_control_plane
+
+# - name: Bootstrap Kubernetes Worker Nodes
+#   hosts: node
+#   become: true
+#   roles:
+#     - role: k8s_worker_node

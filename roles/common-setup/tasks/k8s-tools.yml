@@ -1,0 +1,38 @@
+- name: K8S tools => Add Kubernetes's official GPG key
+  become: true
+  ansible.builtin.get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/Release.key
+    dest: /etc/apt/trusted.gpg.d/kubernetes.asc
+    mode: "0644"
+    force: false
+
+- name: K8S tools => Add Docker repository
+  become: true
+  ansible.builtin.apt_repository:
+    repo: deb [signed-by=/etc/apt/trusted.gpg.d/kubernetes.asc] https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version }}/deb/ /
+    state: present
+    filename: kubernetes
+
+- name: K8S tools => Update package lists
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: K8S tools => Install packages
+  become: true
+  ansible.builtin.apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+
+- name: K8S tools => Hold packages
+  become: true
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl

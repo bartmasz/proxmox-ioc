@@ -1,0 +1,19 @@
+- name: "Install => Update package lists"
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: "Install => Upgrade packages"
+  become: true
+  ansible.builtin.apt:
+    upgrade: full
+
+- name: "Install => Install core packages"
+  become: true
+  ansible.builtin.apt:
+    pkg:
+      - apt-transport-https
+      - curl
+      - gnupg2
+      - ca-certificates
+      - nfs-common

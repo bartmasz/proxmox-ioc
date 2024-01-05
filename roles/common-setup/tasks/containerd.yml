@@ -1,0 +1,45 @@
+- name: ContainerD => Add Docker's official GPG key
+  become: true
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+    dest: /etc/apt/trusted.gpg.d/docker.asc
+    mode: "0644"
+    force: false
+
+- name: ContainerD => Get system architecture
+  ansible.builtin.command: dpkg --print-architecture
+  register: system_architecture
+  changed_when: false
+
+# yamllint disable rule:line-length
+- name: ContainerD => Add Docker repository
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ system_architecture.stdout }} signed-by=/etc/apt/trusted.gpg.d/docker.asc] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+    state: present
+    filename: docker
+
+- name: ContainerD => Update package lists
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: ContainerD => Install containerd.io
+  become: true
+  ansible.builtin.apt:
+    name: containerd.io
+    state: present
+
+- name: ContainerD => Create containerd config file
+  become: true
+  ansible.builtin.shell: |
+    containerd config default > /etc/containerd/config.toml
+    sed -i 's/SystemdCgroup \= false/SystemdCgroup \= true/g' /etc/containerd/config.toml
+  changed_when: true
+
+- name: ContainerD => Enable and restart containerd service
+  become: true
+  ansible.builtin.systemd_service:
+    name: containerd
+    state: restarted
+    enabled: true

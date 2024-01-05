@@ -1,0 +1,3 @@
+- name: Worker join cluster
+  ansible.builtin.import_tasks: join.yml
+  tags: worker-join

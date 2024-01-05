@@ -1,0 +1,15 @@
+- name: Shared node configuration
+  ansible.builtin.import_tasks: config.yml
+  tags: config
+
+- name: Shared node packages
+  ansible.builtin.import_tasks: install.yml
+  tags: install
+
+- name: ContainerD setup
+  ansible.builtin.import_tasks: containerd.yml
+  tags: containerd
+
+- name: K8S tools setup
+  ansible.builtin.import_tasks: k8s-tools.yml
+  tags: k8s-tools

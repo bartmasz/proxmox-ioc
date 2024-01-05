@@ -1,0 +1,34 @@
+- name: Worker => Check if cluster_joined file exists
+  ansible.builtin.stat:
+    path: /home/{{ ansible_user }}/cluster_joined
+  register: cluster_joined
+
+- name: Worker => Check if Control Plan is reachable
+  become: true
+  ansible.builtin.wait_for:
+    host: "{{ hostvars[groups['manager'][0]].ansible_host }}"
+    port: 6443
+    timeout: 3
+
+- name: Worker => Create cluster_join_command.sh file
+  ansible.builtin.copy:
+    content: "{{ hostvars[groups['manager'][0]].join_command }}"
+    dest: /home/{{ ansible_user }}/cluster_join_command.sh
+    mode: "0755"
+  when: not cluster_joined.stat.exists
+
+- name: Worker => Run cluster_join_command.sh
+  become: true
+  ansible.builtin.shell:
+    cmd: "/home/{{ ansible_user }}/cluster_join_command.sh"
+    executable: bash
+  register: kubeadm_join
+  changed_when: kubeadm_join.rc == 0
+  when: not cluster_joined.stat.exists
+
+- name: Worker => Create cluster_joined file
+  ansible.builtin.file:
+    path: /home/{{ ansible_user }}/cluster_joined
+    state: touch
+    mode: "0644"
+  when: kubeadm_join is success and kubeadm_join is not skipped

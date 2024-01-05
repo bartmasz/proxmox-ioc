@@ -1,0 +1,7 @@
+- name: Control Plane init
+  ansible.builtin.import_tasks: init.yml
+  tags: control-plane-init
+
+- name: Control Plane Network
+  ansible.builtin.import_tasks: network.yml
+  tags: network
